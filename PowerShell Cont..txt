@@ -1,0 +1,29 @@
+Powershell Cont.
+
+Modules:
+	A set of PowerShell functionalities group together in the form of a single file that will typically have a .psm1 extension
+	Compromised of serveral components
+	PS C:\> Get-Module
+		This will show the currently imported modules for the current PowerShell session
+	PS C:\> Get-Module -ListAvailable 
+		Returns a list of modules that are available for use
+	PS C:\> Import-Module .\module.psm1 
+		This will import a module that you select
+	To use PowerSploit
+		Git hub link: 
+			https://github.com/PowerShellMafia/PowerSploit/archive/master.zip
+		Now copy the PowerSploit module into a module path
+		To see current paths
+			$ENV:PSModulePath
+			C:\users\user\Documents\WindowsPowerShell\Modules
+		Create a PowerSploit folder
+			Before getting PowerSploit or executing make sure to allow through AV
+		Extract PowerSploit with 7zip
+		Now import the PowerSploit module
+			Import-module PowerSploit
+			Get-module
+			Get-Command -Module PowerSploit
+				We can see a lot of different things that PowerSploit can do
+			Get-Help Write-HihackDLL
+				This will show a help screen for that module
+			

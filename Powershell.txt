@@ -1,0 +1,107 @@
+Powershell for Pentesters:
+
+	Powershell version 5.0 is harder to manipulate
+	Slides say we will be working mostly with 1.0 and 2.0
+
+Powershell CLI:
+
+	Provides acess to built in:
+		cmdlets
+		modules
+		functions
+		features
+		provides a way to create tasks, functions, variables interactively
+
+
+	Shorcut for powershell (if cmd line is not opening powershell)
+		"%appdata%\Microsoft\Windows\Start Menu\Programs\Windows Powershell" directory
+
+	
+	Powershell executable if teh shortcuts are unavailable:
+		"C:\Windows\System32\WindowsPowwerShell\v1.0" or whatever version you are using
+
+	If you're operating on a 64-bit system the location can be found at the following
+		"C:\windows\system32\WindowsPowerShell
+
+	If using a 32bit system you can locate powershell at:
+		"C:\Windows\SysWOW64\WindowsPowerShell" directory
+
+	To see if you are running a 32 or 64 bit system you can use the following in cmd line
+		[Environment]::Is64BitProcess
+			If retured true it is 64, if false it is 32
+
+	32 and 64 bit PowerShell executables can be found at 
+		"C:\Windows\System32\WindowsPowerShell\*"
+
+	When possible try and launch powershell as an administrator
+
+	/? for help (or -Help)
+
+Basic Usage (from command line opening powershell. All commands will start with powershell.exe)
+
+	Some of the following are scripts that we can see if we can run or be disbled with "Bypass" or "Unrestricted" arguments
+		powershell.exe -ExecutionPolicy Bypass .\script.ps1
+		powershell.exe -ExecutionPolicy Unrestricted .\script.ps1
+	To hide powershell window
+		powershell.exe -WindowsStyle Hidden .\script.ps1
+	To specify a command or script block to run
+		-Command Get-Process
+		-Command "& { Get-EventLog -LogName security }"
+	To execute base64 encoded scripts or commands
+		-EncodedCommand $encodedCommand
+	To not load any powershell profiles (this can helps us because no profiles are loaded that may have different security features on them)
+		-NoProfile .\script.ps1
+	Version
+		-Version 2 (this will downgrade the version of Powershell to version 2, this does require that older versions are installed on the system you are attacking)
+
+Get-Help:
+	We can use the Get-Help cmdlet to obtain a manual page on different parts of powershell
+		example:
+			Get-Help Get-Process -Full
+	To see examples of how to use a specific commandlet we can use the -Examples
+		example:
+			Get-Help Get-Process -Examples
+			Get-Help Get-Process -Online (this will show you an online page for that process)
+			Update-Help (will update the local help manual)
+
+CMDLETS:
+	These are light-weight PowerShell scripts that perform a single function
+	Native commands in PowerShell (we can also create our own)
+		example:
+			Get-Process | Sort-Object -Unique | Select-Object ProcessName
+			Get-Process | Sort-Object -Unique | Select-Object ProcessName > uniq_process.txt (to output what you got to a file)
+			Using Get-Process by itself will give you some of the processes that are running
+			To get a better understanding of what is running
+				Get-Process | Format-List *
+			We can then further extend this information to get information about specific processes and paths to their executables
+				Get Process chrome, firefox | Sort-Object -Unique | Format-List Path
+			We can also get process paths and PIDs
+				Get Process chrome, firefox | Sort-Object -Unique | Format-List Path, Id
+		There are also aliases for different commands, such as Get-Child can be looked at by typing ls
+		To see what aliases we can use
+			Get-Alias -Definition Get-ChildItem
+				This will bring back three different commands we can use, ls, dir and gci
+		Another alias we will see often is select (which is the alias for select-object)
+			Get-WmiObject -class win32_operatingsystem | select -Property *
+		For format-list we can use fl
+			Get-WmiObject -class win32_service | Sort-Object -Unique PathName | fl Pathname
+		We can also save the information we are gathering with Export
+			Get-WmiObject -class win32_service | fl* | Export-Csv C:\host_info.csv
+		To access Windows Registry hives
+			cd HKLM:\
+		Select String can be use to help us find different types of documents
+			Select-String C:\users\user\Documents\*.txt -Pattern pass*
+		We can then use Get-Contet to display the information within a file (like cat)
+			Get-Content C:\Users\user\Documents\passwords.txt
+		
+		
+				
+	
+	
+	
+
+		
+
+	
+	
+		

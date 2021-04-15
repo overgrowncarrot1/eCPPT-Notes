@@ -1,0 +1,50 @@
+SNMP ENUMERATION
+
+Four types of SNMP commands used
+	Read
+	Write
+	Trap
+	Traversal Operations
+Works on UDP ports 161 and 162
+
+SNMP attacks
+Flooding
+Community
+Brute Force
+
+Easiest way to obtain community string is to sniff SNMPv1 and SNMPv2 traffic
+Both utilize clear text communications
+
+After getting in to a system there are many tools that can be used
+snmpwalk (part of net-snmp suite)
+
+ex:
+	snmpwalk -v 2c <targetIP> -c public
+	
+	-v verbose
+	2c is the version that is being used by SNMP
+	-c sets the community string to public
+
+If you get some weird iso.x.x.x.x.x hardware: 
+do the following
+install snmp-mibs-downloader
+comment (#) the fourth line in /etc/snmp/snmp.conf
+
+	snmpset (a tool used to request to either set or change information on a network entitiy)
+
+NMAP SNMP TOOLS
+	NMAP comes with a few built in scripts for SNMP
+	snmp-brute
+	snmp-info
+	snmp-interfaces
+	snmp-netstat
+	snmp-processes
+	snmp-sysdescr
+	snmp-win32-services
+/usr/share/nmap/scrip$ ls -l | grep -i snmp
+
+nmap -sU -p 161 --script=<script_name> <ipAddr>
+
+nmap --script-args snmp-brute.communitiesdb=<wordlist> 
+	a wordlist you can use:
+		/usr/share/seclists/Misc/wordlist-common-snmp-community-strings.txt

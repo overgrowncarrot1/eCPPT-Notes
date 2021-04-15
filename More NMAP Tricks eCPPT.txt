@@ -1,0 +1,36 @@
+NMAP Zombie Scanning
+
+Utilize a zombie to scan systems that are not allowed to be scanned by other systems
+We can use this to bypass firewalls / ACLs, or not release our IP address when scanning a system
+
+First we need to find a zombie machine
+To do this we need to use the -O option
+ex:
+	nmap -O -v -n 10.10.10.10
+The -O will look at the operating system and we want to see if IP ID sequence Generation is Incremental
+If so we can use that machine as our zombie machine
+Now find an open port on that zombie machine
+	Regular nmap scan on zombie machine
+From there we can scan other systems through out zombie machine
+ex:
+	nmap -Pn -sI <zombieIP:port> <targetIP> -v
+In the above example we do not want to send pings from our machine (our original machine no the zombie)
+We are then using a zombie IP and port, which is told with -sI
+we can also do any other scans we want 
+ex
+	nmap -Pn -sI 10.10.10.10:135 10.10.10.9 -p- -vv -sC -sV 
+We can also use just the -p option to look at a single, or a few ports
+
+
+NMAP Bounce Scan
+
+Allows us to use FTP Bounce Attack, which utilizes the FTP server to access other machines on the internet and can conduct scans 
+	on networks that we may not have access to (internal networks)
+To do this we have to use the -b option in nmap
+Any scan utilizing the -b option will look like it originated from the FTP server, thus hiding us
+
+NMAP Firewall Rules
+
+To test the rules of firewalls we can use the -sA option within NMAP
+You can inspect the packets even further if you also run wireshark
+

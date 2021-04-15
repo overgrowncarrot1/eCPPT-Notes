@@ -1,0 +1,52 @@
+INE BurpSuite
+
+Is an intercepting proxy
+	allows an attacker to analyze and modify any request, and any response, exchanged between an HTTP client
+	and server
+
+Most use web application proxies
+	Burp Suite
+	ZAP
+
+Burp Suite allows for
+	Interception of requests and responses between browser and web server
+	build requests manually
+	crawl a website by automatically visiting every page in a website
+	fuzz web applications by sending them patterns of valid and invalid inputs to test behavior
+
+Configuring Burp Suite
+
+	start burp suite proxy
+	open burp suite
+	make sure intercept is on
+To check what burpsuite is collecting
+	on the proxy > history tab
+	in the target > Site Map tab
+
+Burp Repeater
+	lets you manually build raw http requests
+		provides the following
+			syntax highlighting
+			raw and rendered responses
+			integration with other Burp tools
+	Can also be used to try different usernames and passwords (along with username and password parameters for hydra)
+	Repeater is used to show how an application will behave with different parameters
+
+You can also set a target that will allow you to just attack that one target
+
+Turn on Server response intercept
+	Proxy
+	Options
+	Intercept Server Reponses (make sure it is clicked to go through burp)
+ 
+Add items to scope to only intercept those URLs
+
+When intercept is off, burp will still get information from HTTP pages
+
+Within Target Sitemap black words are pages you have actually gone to
+The grey pages are ones that burp found on its own
+
+To have burp crawl a target you can use the spider tab
+	Spider is free on older versions of Burp, however, newer versions it is not
+
+There a a couple of labs that you should do for Burp Suite, especially if you have never used it before.	

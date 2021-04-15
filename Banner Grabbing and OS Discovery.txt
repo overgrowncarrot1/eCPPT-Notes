@@ -1,0 +1,18 @@
+Banner Grabbing
+
+There are a few tools for banner grabbing
+
+telnet and netcat
+
+If version is not shown within nmap scan you can try to do a banner grap utilizing telnet and netcat
+Another way to do this is try to log into the system, such as ssh
+ex:
+	nc 10.10.10.1 22 
+	This will do a banner grap of port 22 on that IP address utilizing netcat
+
+OS Fingerprinting
+
+You can use NMAP
+
+Another tool you can use is P0f
+	./p0f -i eth0

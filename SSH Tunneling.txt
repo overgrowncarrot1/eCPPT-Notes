@@ -1,0 +1,22 @@
+Secure shell tunneling
+
+Can be used outside a network or inside a network
+SSH Tunneling will encrypt traffic as it sends it through
+Outside of our network:
+	ssh -L <LPORT TO LISTEN ON>:<RHOST IP>:<RPORT> username@sshserver
+	lets say we wanted to connect to telnet through ssh
+	ssh -L 3000:215.15.1.1:23 root@test 
+		We opened port 3000, passed the traffic to the remote host (ip or domain name), told it what port
+			and lastly gave it a username and sshserver to connect to
+	Once telnet is up and running we would have a local port 3000 listening on our machine
+	telnet 127.0.0.1:3000
+	the traffic will be encrypted because it will go through an SSH tunnel
+
+Inside of our network we can also create tunnels to other machines that have services running on their local ports
+	I have seen mysql running on 127.0.0.1:3306 many times, we can tunnel ourselves to there!
+	For instance our machine IP 192.168.231.2
+	SSH Server machine IP	    192.168.231.3
+When the mysql server is set to only allow local connections (127.0.0.1) we may be able to do the following
+ssh -L 3000:localhost:3306 test@192.168.231.3
+Now we should have a listening connection on port 3000
+mysql -h 127.0.0.1 -P 3000 -u root (or whatever the username may be)

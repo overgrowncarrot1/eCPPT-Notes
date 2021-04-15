@@ -1,0 +1,46 @@
+Firewall / IDS Evasion
+
+nmap -sS -f <targetIP>
+	-sS excutes a syn scan
+	-f tells nmap to fragment packets
+Cannot use -f with -sT or -sV
+We can also use --mtu
+	This is specify a custom offset size
+	Offsets must be in a multiple of eight
+
+A way to fool analysts is by using decoys
+Decoys only work if they are up and running
+Should not send traffic from one at a time, however all of them should go at the same time
+This then hides the attackers IP with the decoy IPs to make it harder for analysts to know who attacked them
+
+nmap -sS -D <decoyIP>, <decoyIP2>, <decoyIP3>, ME <targetIP>
+ME specifies to nmap where to put your IP address for your Kali machine
+If you do not specify NMAP will put you in a random spot
+
+You cannot use decoy with -sT or -sV
+
+TIMING
+
+To evade detection you may use timing
+	-T0 paranoid   5 min
+	-T1 sneaky     15 sec
+	-T2 polite     0.4 sec
+	-T3 normal     default
+	-T4 agressive  10 millisec
+	-T5 insane     5 millisec
+
+Can also use max retries to not retry too many times
+	--max-retries 1
+
+SOURCE PORT
+
+We can change the source port to utilize ports that are allowed by a firewall
+Most firewallys allow port 53, so we could use that and run a scan
+
+nmap -sS --source-port 53 <targetIP>
+nmap -g 80 -sS <targetIP> 
+
+Notice -g can also be used instead of --source-port 
+
+
+

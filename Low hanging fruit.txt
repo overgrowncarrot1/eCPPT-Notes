@@ -1,0 +1,35 @@
+Low Hanging Fruit
+	Misconfigured Servers
+	Unimplemented or badly implemented ACLs
+	Default or weak passwords
+	Open SMB Shares / Null Sessions
+	Broadcast Requests
+	Vulnerabilities related to public exploits
+
+NCrack
+	Brute forcing tool that can use its own wordlist or hav a wordlist specified
+	Can be used with NMAP so the ports it will look for information are already shown on the NMAP scan
+Within NMAP export the results utilizing the -oN command
+From there then feed that into ncrack with the -iN command and give a username and password wordlist
+NCrack will automatically look at the NMAP scan and try to find the ports that it can crack, and then attack those ports on the target machines (you can have more than one IP address in the report)
+
+EyeWitness
+	Used to help identify low hanging fruit as it applies to web applications and networking devices
+	Can figure out if default credentials are being used on HTTP and HTTPS enabled ports
+	Can be downloaded on github
+		./setup.sh
+	to use:
+		python EyeWitness.py --headless --prepend-https -f urls.txt (this can either be urls or IP addresses)
+	When scan completes it will generate a HTLM report with its findings
+	Also contains --active-scan with will actively try to log in (be careful of account lockouts)
+
+Rsmangler
+	Used to generate a wordlist out of a few words (utilizes variations and permutations)
+	make a wordlist (just a couple of words, maybe 2 to three words)
+	cat wordlist.txt | rsmangler --file - > wordlist_new.txt
+	You will see that very quickly the wordlist will increase and give you everything that could possibly be from those few words
+
+CeWL
+	Scrapes a targets website and creates a wordlist
+	cewl -m 8 http://example.com
+		The above example will pull all words with a minimum value of 8 characters (wordlist will be 8 or more characters)

